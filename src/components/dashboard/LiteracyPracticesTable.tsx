@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { literacyPracticeData, locationHierarchy } from '@/data/mockData';
+import { filterLiteracyData } from '@/utils/filterUtils';
 
 interface StatusCellProps {
   value: number;
@@ -16,6 +17,8 @@ function StatusCell({ value, kpiId, stateId, districtId }: StatusCellProps) {
   const { getApplicableTarget } = useDashboardStore();
   const target = getApplicableTarget(kpiId, stateId, districtId);
   const status = getStatusColor(value, target);
+  const filters = useDashboardStore((state) => state.filters);
+  const filteredData = filterLiteracyData(literacyPracticeData, filters);
 
   const statusClasses = {
     green: 'bg-status-green-bg text-status-green',

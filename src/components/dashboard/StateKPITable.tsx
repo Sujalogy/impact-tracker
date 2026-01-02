@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { stateKPIData } from '@/data/mockData';
 import type { TargetThreshold } from '@/types/dashboard';
+import { filterStateKPIData } from '@/utils/filterUtils';
 
 interface StatusCellProps {
   value: number;
@@ -15,6 +16,8 @@ function StatusCell({ value, kpiId, stateId }: StatusCellProps) {
   const { getApplicableTarget } = useDashboardStore();
   const target = getApplicableTarget(kpiId, stateId);
   const status = getStatusColor(value, target);
+  const filters = useDashboardStore((state) => state.filters);
+  const filteredData = filterStateKPIData(stateKPIData, filters);
 
   const statusClasses = {
     green: 'bg-status-green-bg text-status-green',

@@ -1,14 +1,14 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { stateKPIData, literacyPracticeData, numeracyPracticeData, stateInsights, highlightMetrics, locationHierarchy } from '@/data/mockData';
+import { stateKPIData, literacyPracticeData, numeracyPracticeData, stateInsights, highlightMetrics } from '@/data/mockData';
 import type { FilterState } from '@/types/dashboard';
 
 // Color definitions matching LLF brand
 const COLORS = {
-  primary: [30, 58, 95] as [number, number, number], // Navy
-  accent: [32, 149, 142] as [number, number, number], // Teal
-  headerBg: [254, 243, 199] as [number, number, number], // Light cream/yellow
-  headerText: [185, 28, 28] as [number, number, number], // Dark red
+  primary: [30, 58, 95] as [number, number, number],
+  accent: [32, 149, 142] as [number, number, number],
+  headerBg: [254, 243, 199] as [number, number, number],
+  headerText: [185, 28, 28] as [number, number, number],
   green: [34, 197, 94] as [number, number, number],
   greenBg: [220, 252, 231] as [number, number, number],
   yellow: [234, 179, 8] as [number, number, number],
@@ -16,7 +16,7 @@ const COLORS = {
   red: [239, 68, 68] as [number, number, number],
   redBg: [254, 226, 226] as [number, number, number],
   tableBorder: [209, 213, 219] as [number, number, number],
-  tableHeader: [254, 215, 170] as [number, number, number], // Light orange
+  tableHeader: [254, 215, 170] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
   black: [0, 0, 0] as [number, number, number],
   gray: [107, 114, 128] as [number, number, number],
@@ -34,15 +34,15 @@ function getCurrentMonthYear(): string {
 }
 
 export function generateDashboardReport(filters: FilterState): void {
-  const doc = new jsPDF('p', 'mm', 'a4');
+  // Create PDF in LANDSCAPE mode
+  const doc = new jsPDF('l', 'mm', 'a4'); // 'l' for landscape
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
   let yPos = margin;
 
-  // Helper functions
   const addNewPage = () => {
-    doc.addPage();
+    doc.addPage('a4', 'l'); // landscape
     yPos = margin;
   };
 
@@ -55,7 +55,6 @@ export function generateDashboardReport(filters: FilterState): void {
   };
 
   const drawLogo = (x: number, y: number) => {
-    // Draw logo placeholder with text
     doc.setFillColor(...COLORS.primary);
     doc.roundedRect(x, y, 12, 12, 2, 2, 'F');
     doc.setTextColor(...COLORS.white);
@@ -63,7 +62,6 @@ export function generateDashboardReport(filters: FilterState): void {
     doc.setFont('helvetica', 'bold');
     doc.text('LLF', x + 6, y + 7, { align: 'center' });
     
-    // Logo text
     doc.setTextColor(...COLORS.accent);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
@@ -74,22 +72,19 @@ export function generateDashboardReport(filters: FilterState): void {
   };
 
   const drawSectionHeader = (title: string, x: number, y: number, width: number) => {
-    const headerHeight = 10;
+    const headerHeight = 12;
     
-    // Header background with gradient effect
     doc.setFillColor(...COLORS.headerBg);
     doc.roundedRect(x, y, width, headerHeight, 3, 3, 'F');
     
-    // Border
-    doc.setDrawColor(...COLORS.accent);
-    doc.setLineWidth(0.5);
+    doc.setDrawColor(...COLORS.headerText);
+    doc.setLineWidth(0.8);
     doc.roundedRect(x, y, width, headerHeight, 3, 3, 'S');
     
-    // Title text
     doc.setTextColor(...COLORS.headerText);
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text(title, x + width / 2, y + 7, { align: 'center' });
+    doc.text(title, x + width / 2, y + 8, { align: 'center' });
     
     doc.setTextColor(...COLORS.black);
     return y + headerHeight + 5;
@@ -99,127 +94,102 @@ export function generateDashboardReport(filters: FilterState): void {
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     
-    // Green
     doc.setFillColor(...COLORS.green);
-    doc.rect(x, y, 4, 4, 'F');
-    doc.setTextColor(...COLORS.green);
-    doc.text('Green denoting Good', x + 6, y + 3);
+    doc.rect(x, y, 5, 5, 'F');
+    doc.setTextColor(...COLORS.black);
+    doc.text('Green denoting Good', x + 7, y + 3.5);
     
-    // Yellow
     doc.setFillColor(...COLORS.yellow);
-    doc.rect(x + 45, y, 4, 4, 'F');
-    doc.setTextColor(...COLORS.yellow);
-    doc.text('Yellow denoting Average', x + 51, y + 3);
+    doc.rect(x + 60, y, 5, 5, 'F');
+    doc.text('Yellow denoting Average', x + 67, y + 3.5);
     
-    // Red
     doc.setFillColor(...COLORS.red);
-    doc.rect(x + 100, y, 4, 4, 'F');
-    doc.setTextColor(...COLORS.red);
-    doc.text('Red denoting Below Average', x + 106, y + 3);
+    doc.rect(x + 130, y, 5, 5, 'F');
+    doc.text('Red denoting Below Average', x + 137, y + 3.5);
     
     doc.setTextColor(...COLORS.black);
-    return y + 8;
+    return y + 10;
   };
 
   // ===== PAGE 1: Highlights Summary =====
   drawLogo(margin, yPos);
+  yPos = drawSectionHeader(
+    `Highlights – ${getCurrentMonthYear()}`,
+    margin + 60,
+    yPos,
+    pageWidth - margin * 2 - 60
+  );
+
+  // Highlights in a bordered box
+  const boxStartY = yPos;
+  doc.setDrawColor(...COLORS.gray);
+  doc.setLineWidth(0.5);
   
-  // Header
-  yPos = drawSectionHeader(`Highlights – ${getCurrentMonthYear()}`, margin + 50, yPos, pageWidth - margin * 2 - 50);
-  yPos += 5;
-
-  // Content box
-  const contentBoxY = yPos;
-  const highlights = [
-    `Total Classroom Observation (CRO) across the state is ${highlightMetrics[0].value.toLocaleString()}.`,
-    `Average Enrollment is higher in Uttar Pradesh (${stateKPIData.find(s => s.stateId === 'uttar_pradesh')?.avgEnrollment}) and lowest in Jharkhand (${stateKPIData.find(s => s.stateId === 'jharkhand')?.avgEnrollment}).`,
-    `Average Attendance of Students in the Classroom is ${highlightMetrics.find(h => h.id === 'attendance')?.value}%, Haryana leading with ${stateKPIData.find(s => s.stateId === 'haryana')?.studentAttendance}% and Jharkhand (${stateKPIData.find(s => s.stateId === 'jharkhand')?.studentAttendance}%).`,
-    `Joint visit is higher in Haryana (${stateKPIData.find(s => s.stateId === 'haryana')?.jointVisit}%) and lowest in Jharkhand (${stateKPIData.find(s => s.stateId === 'jharkhand')?.jointVisit}%).`,
-    `TG Availability in the classroom (in any form: soft or hard copy) is ${highlightMetrics.find(h => h.id === 'tg_availability')?.value}% across the state.`,
-    `TG followed (all steps) is ${highlightMetrics.find(h => h.id === 'tg_followed')?.value}%, and year-on-year growth shows a significant positive jump of ${highlightMetrics.find(h => h.id === 'tg_followed')?.trend}% points.`,
-    `Assessment tracker completion is ${highlightMetrics.find(h => h.id === 'assessment_tracker')?.value}%. Year-on-year growth showing a significant jump of ${highlightMetrics.find(h => h.id === 'assessment_tracker')?.trend}% points.`,
-    `In Uttar Pradesh, Teaching learning material usage is ${stateKPIData.find(s => s.stateId === 'uttar_pradesh')?.tlmUsage}%.`,
-    `Student participation in learning activities is ${highlightMetrics.find(h => h.id === 'student_participation')?.value}%.`,
-  ];
-
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   
-  highlights.forEach((text, index) => {
-    checkPageBreak(12);
-    
-    // Number
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${index + 1}.`, margin + 5, yPos);
-    
-    // Text with wrapping
-    doc.setFont('helvetica', 'normal');
-    const lines = doc.splitTextToSize(text, pageWidth - margin * 2 - 15);
-    
-    // Highlight specific values with colors
-    doc.text(lines, margin + 12, yPos);
-    yPos += lines.length * 5 + 3;
+  const highlights = [
+    `1. Total Classroom Observation (CRO) across the state is ${highlightMetrics[0].value.toLocaleString()}.`,
+    `2. Average Enrollment is higher in Uttar Pradesh (${stateKPIData.find(s => s.stateId === 'uttar_pradesh')?.avgEnrollment}) and lowest in Jharkhand (${stateKPIData.find(s => s.stateId === 'jharkhand')?.avgEnrollment}).`,
+    `3. Average Attendance of Students in the Classroom is 72%, Haryana leading with ${stateKPIData.find(s => s.stateId === 'haryana')?.studentAttendance}% and Jharkhand (${stateKPIData.find(s => s.stateId === 'jharkhand')?.studentAttendance}%).`,
+    `4. Joint visit is higher in Haryana (72%) and lowest in Jharkhand (48%).`,
+    `5. TG Availability in the classroom (in any form: soft or hard copy) is 76% across the state.`,
+    `6. TG followed (all steps) is 65%, and year-on-year growth shows a significant positive jump of 8% points.`,
+    `7. Assessment tracker completion is 62%. Year-on-year growth showing a significant jump of 6% points.`,
+    `8. In Uttar Pradesh, Teaching learning material usage is ${stateKPIData.find(s => s.stateId === 'uttar_pradesh')?.tlmUsage}%.`,
+    `9. Student participation in learning activities is 71%.`,
+  ];
+
+  highlights.forEach((text) => {
+    const lines = doc.splitTextToSize(text, pageWidth - margin * 2 - 10);
+    doc.text(lines, margin + 5, yPos);
+    yPos += lines.length * 5 + 2;
   });
 
-  // Draw box around content
-  const contentBoxHeight = yPos - contentBoxY + 5;
-  doc.setDrawColor(...COLORS.gray);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(margin, contentBoxY - 5, pageWidth - margin * 2, contentBoxHeight, 3, 3, 'S');
+  doc.roundedRect(margin, boxStartY - 3, pageWidth - margin * 2, yPos - boxStartY + 5, 3, 3, 'S');
 
-  // ===== PAGE 2: State-wise KPI Table =====
+  // ===== PAGE 2: State KPI Table (Landscape) =====
   addNewPage();
   drawLogo(margin, yPos);
-  yPos = drawSectionHeader(`Highlights - ${getCurrentMonthYear()}`, margin + 50, yPos, pageWidth - margin * 2 - 50);
-  yPos += 5;
-
-  // KPI Table
-  const tableData = stateKPIData.map(state => [
-    state.stateName.substring(0, 12),
-    state.totalCRO.toString(),
-    state.avgEnrollment.toString(),
-    `${state.studentAttendance}%`,
-    `${state.jointVisit}%`,
-    `${state.tgAvailability}%`,
-    `${state.tgFollowed}%`,
-    `${state.tgPartialFollowed}%`,
-    `${state.assessmentTracker}%`,
-    `${state.tlmUsage}%`,
-    `${state.studentParticipation}%`,
-  ]);
+  yPos = drawSectionHeader(
+    `Highlights - ${getCurrentMonthYear()}`,
+    margin + 60,
+    yPos,
+    pageWidth - margin * 2 - 60
+  );
 
   autoTable(doc, {
     startY: yPos,
-    head: [[
-      'KPIs',
-      ...stateKPIData.map(s => s.stateName.substring(0, 10))
-    ]],
+    head: [['KPIs', 'Rajasthan', 'Uttar Pradesh', 'Haryana', 'Chhattisgarh', 'Jharkhand']],
     body: [
-      ['Total CRO', ...stateKPIData.map(s => s.totalCRO.toString())],
-      ['Avg Enrollment', ...stateKPIData.map(s => s.avgEnrollment.toString())],
-      ['Attendance %', ...stateKPIData.map(s => `${s.studentAttendance}%`)],
-      ['Joint Visit %', ...stateKPIData.map(s => `${s.jointVisit}%`)],
-      ['TG Availability', ...stateKPIData.map(s => `${s.tgAvailability}%`)],
-      ['TG Followed', ...stateKPIData.map(s => `${s.tgFollowed}%`)],
-      ['TG Partial', ...stateKPIData.map(s => `${s.tgPartialFollowed}%`)],
-      ['Assessment', ...stateKPIData.map(s => `${s.assessmentTracker}%`)],
-      ['TLM Usage', ...stateKPIData.map(s => `${s.tlmUsage}%`)],
-      ['Participation', ...stateKPIData.map(s => `${s.studentParticipation}%`)],
+      ['Total Classroom Observation', ...stateKPIData.map(s => s.totalCRO.toString())],
+      ['Average Enrollment', ...stateKPIData.map(s => s.avgEnrollment.toString())],
+      ['Student Present (Attendance %)', ...stateKPIData.map(s => `${s.studentAttendance}%`)],
+      ['Joint Visit (%)', ...stateKPIData.map(s => `${s.jointVisit}%`)],
+      ['TG "Availability" in Classroom', ...stateKPIData.map(s => `${s.tgAvailability}%`)],
+      ['TG "Followed" (All Steps)', ...stateKPIData.map(s => `${s.tgFollowed}%`)],
+      ['TG "Partial Followed"', ...stateKPIData.map(s => `${s.tgPartialFollowed}%`)],
+      ['Assessment Tracker', ...stateKPIData.map(s => `${s.assessmentTracker}%`)],
+      ['Teaching Learning Material (usage)', ...stateKPIData.map(s => `${s.tlmUsage}%`)],
+      ['Student Participation', ...stateKPIData.map(s => `${s.studentParticipation}%`)],
     ],
     theme: 'grid',
     styles: {
-      fontSize: 8,
-      cellPadding: 2,
+      fontSize: 9,
+      cellPadding: 3,
       halign: 'center',
       valign: 'middle',
+      lineColor: COLORS.tableBorder,
+      lineWidth: 0.3,
     },
     headStyles: {
       fillColor: COLORS.tableHeader,
       textColor: COLORS.black,
       fontStyle: 'bold',
+      fontSize: 10,
     },
     columnStyles: {
-      0: { halign: 'left', fontStyle: 'bold' },
+      0: { halign: 'left', fontStyle: 'bold', cellWidth: 60 },
     },
     didParseCell: (data) => {
       if (data.section === 'body' && data.column.index > 0) {
@@ -229,44 +199,59 @@ export function generateDashboardReport(filters: FilterState): void {
           if (!isNaN(value)) {
             const status = getStatusColor(value);
             data.cell.styles.fillColor = status.bg;
+            data.cell.styles.textColor = status.text;
+            data.cell.styles.fontStyle = 'bold';
           }
         }
       }
     },
   });
 
-  yPos = (doc as any).lastAutoTable.finalY + 10;
-  drawColorLegend(margin + 20, yPos);
+  yPos = (doc as any).lastAutoTable.finalY + 8;
+  drawColorLegend(pageWidth / 2 - 110, yPos);
 
   // ===== PAGE 3: Literacy Practices =====
   addNewPage();
   drawLogo(margin, yPos);
-  yPos = drawSectionHeader('Prioritized Practices in Literacy Classes', margin + 50, yPos, pageWidth - margin * 2 - 50);
-  yPos += 5;
+  yPos = drawSectionHeader(
+    'Prioritized Practices in Literacy Classes',
+    margin + 60,
+    yPos,
+    pageWidth - margin * 2 - 60
+  );
 
-  // Group literacy data by state for first state only (simplified)
-  const literacyByDistrict = literacyPracticeData.slice(0, 5);
+  const literacyStates = Array.from(new Set(literacyPracticeData.map(d => d.stateId)))
+    .slice(0, 4);
   
+  const literacyTableData = literacyStates.flatMap(stateId => {
+    const stateData = literacyPracticeData.filter(d => d.stateId === stateId);
+    const stateName = stateData[0]?.districtName.split(' ')[0] || stateId;
+    
+    return stateData.slice(0, 3).map((d, idx) => [
+      idx === 0 ? stateName : '',
+      d.districtName,
+      `${d.pp1}%`,
+      `${d.pp2}%`,
+      `${d.pp3}%`,
+      `${d.pp4}%`,
+      `${d.gp1}%`,
+      `${d.gp2}%`,
+    ]);
+  });
+
+  literacyTableData.push(['', 'Grand Total', '56%', '62%', '65%', '26%', '67%', '90%']);
+
   autoTable(doc, {
     startY: yPos,
-    head: [['District/KPI', 'PP1', 'PP2', 'PP3', 'PP4', 'GP1', 'GP2']],
-    body: [
-      ...literacyByDistrict.map(d => [
-        d.districtName,
-        `${d.pp1}%`,
-        `${d.pp2}%`,
-        `${d.pp3}%`,
-        `${d.pp4}%`,
-        `${d.gp1}%`,
-        `${d.gp2}%`,
-      ]),
-      ['Grand Total', '56%', '62%', '65%', '26%', '67%', '90%'],
-    ],
+    head: [['State', 'District/KPI', 'PP1', 'PP2', 'PP3', 'PP4', 'GP1', 'GP2']],
+    body: literacyTableData,
     theme: 'grid',
     styles: {
       fontSize: 9,
       cellPadding: 3,
       halign: 'center',
+      lineColor: COLORS.tableBorder,
+      lineWidth: 0.3,
     },
     headStyles: {
       fillColor: COLORS.tableHeader,
@@ -274,71 +259,92 @@ export function generateDashboardReport(filters: FilterState): void {
       fontStyle: 'bold',
     },
     columnStyles: {
-      0: { halign: 'left', fontStyle: 'bold' },
+      0: { halign: 'left', fontStyle: 'bold', cellWidth: 30 },
+      1: { halign: 'left', fontStyle: 'bold', cellWidth: 50 },
     },
     didParseCell: (data) => {
-      if (data.section === 'body' && data.column.index > 0) {
+      if (data.section === 'body' && data.column.index > 1) {
         const cellText = data.cell.text[0];
         if (cellText && cellText.includes('%')) {
           const value = parseInt(cellText.replace('%', ''));
           if (!isNaN(value)) {
             const status = getStatusColor(value);
             data.cell.styles.fillColor = status.bg;
+            data.cell.styles.textColor = status.text;
+            data.cell.styles.fontStyle = 'bold';
           }
         }
       }
     },
   });
 
-  yPos = (doc as any).lastAutoTable.finalY + 8;
+  yPos = (doc as any).lastAutoTable.finalY + 5;
 
-  // PP Descriptions
+  // Practice descriptions
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
-  const ppDescriptions = [
+  const literacyDesc = [
     'PP1. Asking higher-order comprehension questions during conversations: OLD',
     'PP2. Guiding children in their reading of graded texts: READING',
-    'PP3. Applying reading comprehension strategies (prediction, questioning, retelling): DECODING',
-    'PP4. Explaining writing tasks with examples and providing individual feedback: WRITING',
+    'PP3. Applying reading comprehension strategies (prediction, questioning, retelling) using graded text: DECODING',
+    'PP4. Explaining writing tasks with examples and providing individual feedback on writing: WRITING',
     'GP1. Checks for understanding during and at the end of the lesson',
     'GP2. Encouraging/using children\'s home languages in the classrooms',
   ];
-  ppDescriptions.forEach(desc => {
-    doc.text(desc, margin, yPos);
-    yPos += 4;
+
+  const col1X = margin;
+  const col2X = pageWidth / 2;
+  literacyDesc.forEach((desc, idx) => {
+    const x = idx < 3 ? col1X : col2X;
+    const y = yPos + (idx % 3) * 4;
+    doc.text(desc, x, y);
   });
 
-  yPos += 5;
-  drawColorLegend(margin + 20, yPos);
+  yPos += 15;
+  drawColorLegend(pageWidth / 2 - 110, yPos);
 
   // ===== PAGE 4: Numeracy Practices =====
   addNewPage();
   drawLogo(margin, yPos);
-  yPos = drawSectionHeader('Prioritized Practices in Numeracy Classes', margin + 50, yPos, pageWidth - margin * 2 - 50);
-  yPos += 5;
+  yPos = drawSectionHeader(
+    'Prioritized Practices in Numeracy Classes',
+    margin + 60,
+    yPos,
+    pageWidth - margin * 2 - 60
+  );
 
-  const numeracyByDistrict = numeracyPracticeData.slice(0, 5);
+  const numeracyStates = Array.from(new Set(numeracyPracticeData.map(d => d.stateId)))
+    .slice(0, 4);
+  
+  const numeracyTableData = numeracyStates.flatMap(stateId => {
+    const stateData = numeracyPracticeData.filter(d => d.stateId === stateId);
+    const stateName = stateData[0]?.districtName.split(' ')[0] || stateId;
+    
+    return stateData.slice(0, 3).map((d, idx) => [
+      idx === 0 ? stateName : '',
+      d.districtName,
+      `${d.pp1}%`,
+      `${d.pp2}%`,
+      `${d.pp3}%`,
+      `${d.pp4}%`,
+      `${d.gp1}%`,
+      `${d.gp2}%`,
+    ]);
+  });
+
+  numeracyTableData.push(['', 'Grand Total', '21%', '66%', '56%', '33%', '61%', '90%']);
 
   autoTable(doc, {
     startY: yPos,
-    head: [['District/KPI', 'PP1', 'PP2', 'PP3', 'PP4', 'GP1', 'GP2']],
-    body: [
-      ...numeracyByDistrict.map(d => [
-        d.districtName,
-        `${d.pp1}%`,
-        `${d.pp2}%`,
-        `${d.pp3}%`,
-        `${d.pp4}%`,
-        `${d.gp1}%`,
-        `${d.gp2}%`,
-      ]),
-      ['Grand Total', '21%', '66%', '56%', '33%', '61%', '90%'],
-    ],
+    head: [['State', 'District/KPI', 'PP1', 'PP2', 'PP3', 'PP4', 'GP1', 'GP2']],
+    body: numeracyTableData,
     theme: 'grid',
     styles: {
       fontSize: 9,
       cellPadding: 3,
       halign: 'center',
+      lineColor: COLORS.tableBorder,
+      lineWidth: 0.3,
     },
     headStyles: {
       fillColor: COLORS.tableHeader,
@@ -346,147 +352,62 @@ export function generateDashboardReport(filters: FilterState): void {
       fontStyle: 'bold',
     },
     columnStyles: {
-      0: { halign: 'left', fontStyle: 'bold' },
+      0: { halign: 'left', fontStyle: 'bold', cellWidth: 30 },
+      1: { halign: 'left', fontStyle: 'bold', cellWidth: 50 },
     },
     didParseCell: (data) => {
-      if (data.section === 'body' && data.column.index > 0) {
+      if (data.section === 'body' && data.column.index > 1) {
         const cellText = data.cell.text[0];
         if (cellText && cellText.includes('%')) {
           const value = parseInt(cellText.replace('%', ''));
           if (!isNaN(value)) {
             const status = getStatusColor(value);
             data.cell.styles.fillColor = status.bg;
+            data.cell.styles.textColor = status.text;
+            data.cell.styles.fontStyle = 'bold';
           }
         }
       }
     },
   });
 
-  yPos = (doc as any).lastAutoTable.finalY + 8;
+  yPos = (doc as any).lastAutoTable.finalY + 5;
 
-  // PP Descriptions for Numeracy
-  doc.setFontSize(7);
-  const numDescriptions = [
+  const numeracyDesc = [
     'PP1. Using concrete materials in teaching and learning mathematical concepts and processes',
     'PP2. Including children\'s real-life experiences to explain the concept',
     'PP3. Giving opportunities to children to practice mathematical tasks and provides feedback',
-    'PP4. Asking children to explain the mathematical solution they have done and asking "why" and "how"',
+    'PP4. Asking children to explain the mathematical solution they have done and asking children "why" and "how" questions to deepen the concepts/processes/reasoning',
     'GP1. Checks for understanding during and/or at the end of the lesson',
     'GP2. Encouraging/using children\'s home languages in the classrooms',
   ];
-  numDescriptions.forEach(desc => {
-    doc.text(desc, margin, yPos);
-    yPos += 4;
+
+  numeracyDesc.forEach((desc, idx) => {
+    const x = idx < 3 ? col1X : col2X;
+    const y = yPos + (idx % 3) * 4;
+    doc.text(desc, x, y);
   });
 
-  yPos += 5;
-  drawColorLegend(margin + 20, yPos);
+  yPos += 15;
+  drawColorLegend(pageWidth / 2 - 110, yPos);
 
-  // ===== PAGE 5: State Insights =====
-  stateInsights.forEach((state, index) => {
-    if (index % 2 === 0) {
-      addNewPage();
-      drawLogo(margin, yPos);
-    }
-    
-    yPos = drawSectionHeader(
-      `In ${state.stateName}, Key Observations`,
-      margin + 50,
-      yPos,
-      pageWidth - margin * 2 - 50
-    );
-    yPos += 5;
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-
-    const insights = [
-      `Total visits in this period are ${state.totalVisits.toLocaleString()}.`,
-      `Student participation in Classroom Activities: ${state.studentParticipation}%.`,
-    ];
-
-    insights.forEach((text, i) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${String.fromCharCode(97 + i)})`, margin + 5, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text(text, margin + 12, yPos);
-      yPos += 6;
-    });
-
-    // MLE Classes section
-    yPos += 3;
-    doc.setFont('helvetica', 'bold');
-    doc.text(`MLE Classes (Total ${state.literacyObservations} Observations)`, margin + 5, yPos);
-    yPos += 5;
-    doc.setFont('helvetica', 'normal');
-
-    const mleItems = [
-      { label: 'Asking higher-order comprehension questions', value: state.literacyPractices.pp1, tag: 'OLD' },
-      { label: 'Guiding children in reading of graded texts', value: state.literacyPractices.pp2, tag: 'READING' },
-      { label: 'Applying reading comprehension strategies', value: state.literacyPractices.pp3, tag: 'DECODING' },
-      { label: 'Explaining writing tasks with feedback on writing', value: state.literacyPractices.pp4, tag: 'WRITING' },
-    ];
-
-    mleItems.forEach((item, i) => {
-      doc.text(`${String.fromCharCode(105 + i)}.`, margin + 8, yPos);
-      doc.text(`${item.label} ${item.value}%.`, margin + 15, yPos);
-      
-      // Colored tag
-      const status = getStatusColor(item.value);
-      doc.setFillColor(...status.bg);
-      const tagX = margin + 15 + doc.getTextWidth(`${item.label} ${item.value}%. `) + 2;
-      doc.roundedRect(tagX, yPos - 3, doc.getTextWidth(item.tag) + 4, 5, 1, 1, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.text(item.tag, tagX + 2, yPos);
-      doc.setFont('helvetica', 'normal');
-      yPos += 5;
-    });
-
-    // Numeracy Classes section
-    yPos += 3;
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Numeracy Classes (Total ${state.numeracyObservations} Observations)`, margin + 5, yPos);
-    yPos += 5;
-    doc.setFont('helvetica', 'normal');
-
-    const numItems = [
-      { label: 'Using concrete materials in teaching', value: state.numeracyPractices.pp1 },
-      { label: 'Including children\'s real-life experiences', value: state.numeracyPractices.pp2 },
-      { label: 'Giving practice opportunities with feedback', value: state.numeracyPractices.pp3 },
-      { label: 'Asking to explain solutions with "why" and "how"', value: state.numeracyPractices.pp4 },
-    ];
-
-    numItems.forEach((item, i) => {
-      doc.text(`${String.fromCharCode(105 + i)}.`, margin + 8, yPos);
-      doc.text(`${item.label} ${item.value}%.`, margin + 15, yPos);
-      
-      // Colored value highlight
-      const status = getStatusColor(item.value);
-      const valueX = margin + 15 + doc.getTextWidth(`${item.label} `);
-      doc.setFillColor(...status.bg);
-      doc.roundedRect(valueX - 1, yPos - 3, doc.getTextWidth(`${item.value}%`) + 2, 5, 1, 1, 'F');
-      yPos += 5;
-    });
-
-    yPos += 15;
-  });
-
-  // Footer on last page
+  // Footer
   doc.setFontSize(8);
   doc.setTextColor(...COLORS.gray);
-  doc.text(
-    `Generated on ${new Date().toLocaleDateString('en-US', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })} | Language & Learning Foundation`,
-    pageWidth / 2,
-    pageHeight - 10,
-    { align: 'center' }
-  );
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    doc.text(
+      `Page ${i} of ${pages} | Generated on ${new Date().toLocaleDateString('en-US', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric'
+      })} | Language & Learning Foundation`,
+      pageWidth / 2,
+      pageHeight - 8,
+      { align: 'center' }
+    );
+  }
 
-  // Save the PDF
   doc.save(`LLF_Dashboard_Report_${getCurrentMonthYear().replace(' ', '_')}.pdf`);
 }
